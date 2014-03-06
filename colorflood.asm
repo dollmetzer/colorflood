@@ -166,7 +166,7 @@ hilite:		sta 55354,y
 			sta $fd
 			lda #<buffer+40	// $fe/$ff is pointer to color buffer
 			sta $fe
-			lda #>buffer
+			lda #>buffer+40
 			sta $ff
 			ldx #$10		// 16 rows
 colorfill:	ldy #$10		// 16 columns
@@ -357,7 +357,7 @@ gameloop:	asl $d019		// delete IRQ flag
 			lda mode		// 0 = joystick mode, 1 = flood mode
 			bne doFlood
 			jsr joystick	// read joystick
-//			jsr checkReady  // check, if everything is filled
+			jsr checkReady  // check, if everything is filled
 			jmp quitirq
 doFlood:	jsr flood		
 quitirq:	nop
@@ -604,6 +604,42 @@ lookdown:	clc
 			sta ($fe),y		// and in color buffer
 						
 lookend:    ldy $f8			// restore y position
+			rts
+
+
+
+/**
+ * check, if screen has only one color
+ */
+checkReady:	lda #1				// assume - yes
+			sta isready
+			lda buffer+41		// store color of upper left corner
+			sta $f5
+
+			lda #<buffer+40		// set pointer to color buffer
+			sta $fe
+			lda #>buffer+40
+			sta $ff
+			
+			ldx #$10
+checkX:		ldy #$10
+checkY:		lda ($fe),y
+			cmp $f5
+			beq checkEQ
+			lda #0				// found difference - not ready
+			sta isready
+checkEQ:	dey
+			bne checkY
+			clc
+			lda $fe
+			adc #$28
+			sta $fe
+			lda $ff
+			adc #0
+			sta $ff
+			dex
+			bne checkX
+
 			rts
 
 
