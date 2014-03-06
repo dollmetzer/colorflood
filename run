@@ -1,0 +1,2 @@
+java -jar ../../02_tools/KickAssembler/KickAss.jar ./colorflood.asm
+x64 colorflood.prg
