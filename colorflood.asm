@@ -214,6 +214,14 @@ colorfill1:	lda $d012		// begin random calculation
 			sta $043d
 			lda $f6			// selected color
 			sta $d83b
+
+			// initialize sound			
+			lda #0
+			sta $d415	// reset filter freq
+			sta $d416	// reset filter freq
+			sta $d417	// filter off, resonance off
+			lda #$0f	// Volume 15, no filterPlay it loud
+			sta $d418
 			
 			rts
 
@@ -352,19 +360,23 @@ initrirq:	sei				// disable interrupt
  
 gameloop:	asl $d019		// delete IRQ flag
 
+			lda isready
+			bne gameEnd
+
 			inc $d020		// increase border color
 
 			lda mode		// 0 = joystick mode, 1 = flood mode
 			bne doFlood
+			jsr sfxReset
 			jsr joystick	// read joystick
 			jsr checkReady  // check, if everything is filled
 			jmp quitirq
 doFlood:	jsr flood		
 quitirq:	nop
 			jsr timerDec	// timer decrease
-			lda isready
+			lda #0
 			sta $d020		// Set border back to black
-			pla				// restore a, y and x
+gameEnd:	pla				// restore a, y and x
 			tay
 			pla
 			tax
@@ -389,6 +401,7 @@ joyup:		txa
 			bne joydown		// not up - next check down
 			lda #$0f		// change max 4 time per sec.
 			sta retard
+			jsr sfxBing		// play sound
 			dec $f6
 			beq joyup1
 			jmp joyend
@@ -401,6 +414,7 @@ joydown:	txa
 			bne joyfire		// not down - next check fire
 			lda #$0f		// change max 4 time per sec.
 			sta retard
+			jsr sfxBing		// play sound
 			lda $f6			// increase selected color number
 			clc
 			adc #$01
@@ -426,6 +440,7 @@ joyfire:	txa
 			sta $0429
 			lda #$01		// switch to flood mode
 			sta mode
+			jsr sfxWoosh	// Begin sound effect woosh
 
 			// increase turn counter in decimal mode
 			sed				//set decimal mode
@@ -474,7 +489,15 @@ timerTick:	lda #51
  * F l o o d
  * ---------
  */
-flood:		lda #$00 		// pointer to char screen $0400
+flood:		sec				// soundeffect
+			lda $d400
+			sbc #08
+			sta $d400
+			lda $d401
+			sbc #0
+			sta $d401
+	
+			lda #$00 		// pointer to char screen $0400
 			sta $fa			// $fa,$fb
 			lda #04
 			sta $fb
@@ -685,6 +708,52 @@ showTimer:	lda timerScore
 			sta 1024+200+21
 			rts
 
+
+
+/**
+ * Sound Effect Woosh initialisation on voice 1
+ */
+sfxWoosh:	lda #$a2	// Attack slow, Decay quick
+			sta $d405	// AD
+			lda #$fc	// Sustain high, Release medium
+			sta $d406	// SR
+			lda #207	// Frequency C5 Lo Byte
+			sta $d400
+			lda #34		// Frequency C5 Hi Byte
+			sta $d401
+			lda #$81	// Noise + Gate on
+			sta $d404
+			rts
+
+/**
+ * Sound Effect Bing initialisation on voice 2
+ */
+sfxBing:	lda #$22	// Attack slow, Decay quick
+			sta $d40c	// AD
+			lda #$f4	// Sustain high, Release medium
+			sta $d40d	// SR
+			lda #207	// Frequency C5 Lo Byte
+			sta $d407
+			lda #34		// Frequency C5 Hi Byte
+			sta $d408
+			lda #$11	// Triangle gate on
+			sta $d40b
+			nop
+			nop
+			nop
+			lda #$10	// Triangle gate off
+			sta $d40b
+			rts
+
+/**
+ * All Sound Effects stop
+ */
+sfxReset:	lda #0		
+			sta $d400	// Frequency Lo Byte off
+			sta $d401	// Frequency Hi Byte off
+			lda #$80
+			sta $d404	// gate off
+			rts
 
 /*
  * S o m e   v a r i a b l e s

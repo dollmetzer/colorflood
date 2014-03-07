@@ -62,6 +62,8 @@ Working:
 
 - Detection, if the field is finished
 
+- basic sound
+
 
 Not working until now:
 
@@ -70,5 +72,3 @@ Not working until now:
 - no detection, if the countdown is on zero
 
 - no end of level action
-
-- no sound
