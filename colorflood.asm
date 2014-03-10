@@ -496,6 +496,13 @@ flood:		sec				// soundeffect
 			lda $d401
 			sbc #0
 			sta $d401
+			sec
+			lda $d40e
+			sbc 08
+			sta $d40e
+			lda $d40f
+			sbc #0
+			sta $d40f
 	
 			lda #$00 		// pointer to char screen $0400
 			sta $fa			// $fa,$fb
@@ -663,6 +670,10 @@ checkEQ:	dey
 			dex
 			bne checkX
 
+			lda isready
+			bne checkEnd
+			rts	
+checkEnd:	jsr sfxWon
 			rts
 
 
@@ -715,29 +726,38 @@ showTimer:	lda timerScore
  */
 sfxWoosh:	lda #$a2	// Attack slow, Decay quick
 			sta $d405	// AD
+			lda #$48
+			sta $d413	// AD voice 3
 			lda #$fc	// Sustain high, Release medium
 			sta $d406	// SR
+			lda #$00
+			sta $d414	// SR voice 3
 			lda #207	// Frequency C5 Lo Byte
 			sta $d400
+			sta $d40e	// voice 3
 			lda #34		// Frequency C5 Hi Byte
 			sta $d401
-			lda #$81	// Noise + Gate on
+			sta $d40f	// voice 3
+			lda #$81	// Noise + Gate on voice 1
 			sta $d404
+			lda #$21	// Sawtooth + gate on voice 3
+			sta $d412			
 			rts
 
 /**
- * Sound Effect Bing initialisation on voice 2
+ * Sound effect Bing initialisation on voice 2
  */
 sfxBing:	lda #$22	// Attack slow, Decay quick
-			sta $d40c	// AD
-			lda #$f4	// Sustain high, Release medium
-			sta $d40d	// SR
+			sta $d40c	// AD voice 2
+			lda #$f2	// Sustain high, Release quick
+			sta $d40d	// SR voice 2
 			lda #207	// Frequency C5 Lo Byte
-			sta $d407
+			sta $d407	// voice 1
 			lda #34		// Frequency C5 Hi Byte
-			sta $d408
+			sta $d408	// voice 1
 			lda #$11	// Triangle gate on
 			sta $d40b
+			nop
 			nop
 			nop
 			nop
@@ -746,13 +766,61 @@ sfxBing:	lda #$22	// Attack slow, Decay quick
 			rts
 
 /**
- * All Sound Effects stop
+ * Sound effect level won
+ */
+sfxWon:		lda #$22	// Attack quick Decay quick
+			sta $d405	// AD voice 1
+			sta $d40c	// AD voice 2
+			sta $d413	// AD voice 3
+			lda #$f8	// Sustain high, Release quick
+			sta $d406	// SR voice 1
+			sta $d40d	// SR voice 2
+			sta $d414	// SR voice 3
+			lda #207	// note C5, voice 1
+			sta $d400
+			lda #34
+			sta $d401
+			lda#103		// note C4, voice 2
+			sta $d407
+			lda#17
+			sta $d408
+			lda#180		// note C3, voice 3
+			sta $d40e
+			lda#8
+			sta $d40f
+			lda #0		// no filter
+			sta $d417
+			lda #$0f	// full volume
+			sta $d418
+			lda #$13	// triangle, sync, gate on
+			sta $d404	// voice 1
+			lda #$23	// sawtooth, sync, gate on
+			sta $d40b
+			lda #$43	// square, sync, gate on
+			sta $d412
+			nop
+			nop
+			nop
+			nop
+			lda #$12	// triangle, sync, gate off
+			sta $d404	// voice 1
+			lda #$22	// sawtooth, sync, gate off
+			sta $d40b
+			lda #$40	// square, sync, gate off
+			sta $d412
+			rts
+
+
+/**
+ * All sound effects stop
  */
 sfxReset:	lda #0		
 			sta $d400	// Frequency Lo Byte off
 			sta $d401	// Frequency Hi Byte off
 			lda #$80
 			sta $d404	// gate off
+			lda #$20	// gate off voice 3
+			sta $d412			
 			rts
 
 /*
