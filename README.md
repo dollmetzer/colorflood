@@ -34,7 +34,7 @@ tools, that are available on all three important operating systems:
 
 - Grab your preferred ASCII-Editor. On Linux, I use Geany
 
-- No sound utility now. I'm still searching...
+- Sound Monitor from Chris Huelsbeck
 
 
 the files
@@ -42,6 +42,7 @@ the files
 colorflood_basic.txt - the proof for the colorchanging algorithm. working but unbelievable slow.
 colorflood.asm - the 6502 assembler sourcecode
 font.bin - the new character set with game graphics
+
  
 
 project status
@@ -62,7 +63,12 @@ Working:
 
 - Detection, if the field is finished
 
-- basic sound
+- basic sound in game
+
+- music in the title (huelsbeck player)
+
+- unpacking routine
+
 
 
 Not working until now:

@@ -29,6 +29,7 @@ basicstart:	.byte 12, 8, 219, 7, 158, 32
  * P r o g r a m s t a r t
  * -----------------------
  */			
+			jsr unpack
 			jsr initprg
 			jsr title
 			jsr prepscreen
@@ -55,6 +56,80 @@ initprg:	lda #$00
 			rts
 
 
+
+/**
+ * Unpack Music to $a000
+ */
+unpack:		lda #< music	// source
+			sta $fc
+			lda #> music
+			sta $fd
+			lda #< $a000-2	// target (-2, because first 2 bytes are loading address)
+			sta $fe
+			lda #> $a000-2
+			sta $ff
+			ldx #44	// music has 11262 bytes = 44 pages
+unpack1:	ldy #0
+unpack2:	lda ($fc),y
+			sta ($fe),y
+			sty $0400
+			stx $0401
+			dey
+			bne unpack2
+			clc
+			lda $fc
+			adc #0
+			sta $fc
+			lda $fd
+			adc #01
+			sta $fd
+			clc
+			lda $fe
+			adc #0
+			sta $fe
+			lda $ff
+			adc #01
+			sta $ff			
+			dex
+			bne unpack1
+
+			// unpack charset to $3000
+			lda #< charset	// source
+			sta $fc
+			lda #> charset
+			sta $fd
+			lda #< $3000	// target
+			sta $fe
+			lda #> $3000
+			sta $ff
+			ldx #8	// chaset has 2048 bytes = 8 pages
+unpack3:	ldy #0
+unpack4:	lda ($fc),y
+			sta ($fe),y
+			sty $0400
+			stx $0401
+			dey
+			bne unpack4
+			clc
+			lda $fc
+			adc #0
+			sta $fc
+			lda $fd
+			adc #01
+			sta $fd
+			clc
+			lda $fe
+			adc #0
+			sta $fe
+			lda $ff
+			adc #01
+			sta $ff			
+			dex
+			bne unpack3
+			rts
+			
+			
+			
 /**
  *   T I T L E   S C R E E N
  *   -----------------------
@@ -66,6 +141,14 @@ title:		lda #$00
 			lda #147		// clear screen
 			jsr $ffd2
 
+			// switch music on (interrupt to c01f)
+			sei
+			lda #$c0
+			sta $0315
+			lda #$1f
+			sta $0314
+			cli
+			
 			// paint horizontal lines
 			ldy #$28
 titleFence:	lda #102
@@ -840,5 +923,9 @@ buffer:		.fill 1000,0	// color ram buffer
 
 
 // new charset at 12288
-			.pc = $3000
-			.import binary "font.bin"
+//			.pc = $3000
+charset:	.import binary "font.bin"
+
+// music (huelsbeck player)
+// must be copied to a000, player starts c000
+music:		.import binary "music.prg"
