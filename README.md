@@ -80,9 +80,12 @@ Working:
 
 - At the end of a game, message "You lost" oder "score 1234" is displayed
 
+- 5s after end of game, jump back to title
+
 
 Still to do:
 
+- No music in title after first game :-(
+
 - Short Lost or Won Melody at the end of level
-- After 5 s. jump back to title
-- show last score on title
+

@@ -31,10 +31,12 @@ basicstart:	.byte 12, 8, 219, 7, 158, 32
  */			
 			jsr unpack
 			jsr initprg
-			jsr title
+mainLoop:	jsr title
 			jsr prepscreen
 			jsr initrirq
-hold:		jmp hold
+hold:		lda running
+			bne hold
+			jmp mainLoop
 
 
 
@@ -141,12 +143,22 @@ title:		lda #$00
 			lda #147		// clear screen
 			jsr $ffd2
 
+			// delete music registers from 02c0 to 02e0
+//			ldy #$10
+//			lda #0
+// musicReset:	sta $02bf,y
+//			dey
+//			bne musicReset
+
 			// switch music on (interrupt to c01f)
+//			jsr $c000
 			sei
 			lda #$c0
 			sta $0315
 			lda #$1f
 			sta $0314
+			lda #$80		// no vic interrupt
+			sta $d01a 
 			cli
 			
 			// paint horizontal lines
@@ -174,10 +186,47 @@ titleL:		lda titleLogo1-1,y
 			// print copyright
 			ldy #$00
 titleC:		lda	copyright,y
-			beq titleWait
+			beq titleScore
 			sta 1984,y	// last row
 			iny
 			bne titleC
+			
+titleScore:	lda #83
+			sta 1024+335
+			lda #67
+			sta 1024+336
+			lda #79
+			sta 1024+337
+			lda #82
+			sta 1024+338
+			lda #69
+			sta 1024+339
+
+			lda score
+			and #$f0
+			lsr
+			lsr
+			lsr
+			lsr
+			ora #$30
+			sta 1024+341
+			lda score
+			and #$0f
+			ora #$30
+			sta 1024+342
+			lda score+1
+			and #$f0
+			lsr
+			lsr
+			lsr
+			lsr
+			ora #$30
+			sta 1024+343
+			lda score+1
+			and #$0f
+			ora #$30
+			sta 1024+344
+
 
 			// wait for joystick fire
 titleWait:	lda $dc00   	// read joystick 2
@@ -422,7 +471,7 @@ initrirq:	sei				// disable interrupt
 			sta $0315
 			asl $d019		//
 			lda #$7b		//
-			sta $dc0d
+			sta $dc0d		// CIA Interrupt Control and Status
 			lda #$81		// set interrupt request to raster
 			sta $d01a
 			lda #$1b 		// set raster row
@@ -432,6 +481,8 @@ initrirq:	sei				// disable interrupt
 			lda #$00		// field is not ready (completed
 			sta isready
 			cli				// enable interrupt
+			lda #1			// game is running
+			sta running
 			rts
 
 
@@ -444,7 +495,7 @@ initrirq:	sei				// disable interrupt
 gameloop:	asl $d019		// delete IRQ flag
 
 			lda isready
-			bne gameEnd
+			bne waitAfter
 
 			inc $d020		// increase border color
 			lda mode		// 0 = joystick mode, 1 = flood mode
@@ -468,6 +519,14 @@ quitirq:	nop
 			jsr timerDec	// timer decrease
 			lda #0
 			sta $d020		// Set border back to black
+			jmp gameEnd
+
+waitAfter:	dec finishTimer
+			bne gameEnd
+			lda #0
+			sta running
+			// switch irq back...
+
 gameEnd:	pla				// restore a, y and x
 			tay
 			pla
@@ -979,6 +1038,9 @@ writeWon:	lda msgWon1-1,y
 			sta $d40b
 			lda #$40	// square, sync, gate off
 			sta $d412
+
+			lda #$ff
+			sta finishTimer
 			rts
 
 msgWon1:	.byte 16, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 18
@@ -1041,6 +1103,9 @@ writeLost:	lda msgLost1-1,y
 			sta $d40b
 			lda #$40	// square, sync, gate off
 			sta $d412
+
+			lda #$ff
+			sta finishTimer
 			rts
 
 msgLost1:	.byte 16, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 18
@@ -1071,7 +1136,8 @@ moves:		.byte 0			// number of moves in decimal
 timer50th:	.byte 0			// timer 50th of a second 
 timerScore:	.byte 0, 0		// timer score in decimal
 score:		.byte 0, 0		// Score of the last game in decimal
-
+finishTimer:.byte 0			// timer for waiting after game is finished
+running:	.byte 0			// game running (0=no, 1=yes)
 
 buffer:		.fill 1000,0	// color ram buffer
 
