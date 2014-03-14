@@ -279,15 +279,15 @@ colorfill1:	lda $d012		// begin random calculation
 			dex
 			bne colorfill
 
-			lda #$45		// set turn counter
+			lda #$40		// set turn counter
 			sta moves
-			jsr showScore
+			jsr showMoves
 
 			lda #51			// set microtimer
 			sta timer50th
-			lda #$03		// set timer to 300s. in dec.
+			lda #$02		// set timer to 240s. in dec.
 			sta timerScore
-			lda #$00
+			lda #$40
 			sta timerScore+1
 			jsr showTimer
 				
@@ -454,7 +454,7 @@ gameloop:	asl $d019		// delete IRQ flag
 			bne gameloop1
 			lda #1
 			sta isready		// quit
-			jsr sfxWon		// play won tune
+			jsr sfxLost		// play won tune
 			lda #0
 			sta $d020		// Set border back to black
 			jmp gameEnd
@@ -541,7 +541,7 @@ joyfire:	txa
 			sbc #$01
 			sta moves
 			cld				//clear decimal mode
-			jsr showScore
+			jsr showMoves
 			
 joyend:		lda $f6
 			sta $d83b		// show selected color
@@ -573,7 +573,17 @@ timerTick:	lda #51
 			cld		//clear decimal mode
 
 			jsr showTimer
-			rts
+
+			// is timer zero?
+			lda timerScore+1
+			bne timerQuit
+			lda timerScore
+			bne timerQuit
+			lda #1
+			sta isready		// quit
+			jsr sfxLost		// play won tune
+
+timerQuit:	rts
 
 
 
@@ -771,9 +781,9 @@ checkEnd:	jsr sfxWon
 
 
 /**
- * show 2 digit score on screen from decimal coded byte
+ * show 2 digit moves on screen from decimal coded byte
  */
-showScore:	lda moves
+showMoves:	lda moves
 			and #$f0
 			lsr
 			lsr
@@ -792,7 +802,6 @@ showScore:	lda moves
 /**
  * show 3 digit timer on screen from decimal coded bytes
  */
-
 showTimer:	lda timerScore
 			and #$0f
 			ora #$30
@@ -809,6 +818,36 @@ showTimer:	lda timerScore
 			and #$0f
 			ora #$30
 			sta 1024+200+21
+			rts
+
+
+/**
+ * show 4 digit score on the game screen after won
+ */
+showScore:	lda score
+			and #$f0
+			lsr
+			lsr
+			lsr
+			lsr
+			ora #$30
+			sta 1024+339
+			lda score
+			and #$0f
+			ora #$30
+			sta 1024+340
+			lda score+1
+			and #$f0
+			lsr
+			lsr
+			lsr
+			lsr
+			ora #$30
+			sta 1024+341
+			lda score+1
+			and #$0f
+			ora #$30
+			sta 1024+342
 			rts
 
 
@@ -890,10 +929,50 @@ sfxWon:		lda #$22	// Attack quick Decay quick
 			sta $d40b
 			lda #$43	// square, sync, gate on
 			sta $d412
-			nop
-			nop
-			nop
-			nop
+
+			// instead of wait for sound - write the lost message
+			ldy #14
+writeWon:	lda msgWon1-1,y
+			sta 1024+289,y
+			lda msgWon2-1,y
+			sta 1024+329,y
+			lda msgWon3-1,y
+			sta 1024+369,y
+			lda #1
+			sta $d800+289,y
+			sta $d800+329,y
+			sta $d800+369,y
+			dey
+			bne writeWon
+
+			// calculate score (moves*10)+seconds
+			lda moves
+			asl
+			asl
+			asl
+			asl
+			and #$f0
+			sta score+1
+			lda moves
+			lsr
+			lsr
+			lsr
+			lsr
+			and #$0f
+			sta score
+
+			sed
+			clc
+			lda score+1
+			adc timerScore+1
+			sta score+1
+			lda score
+			adc timerScore
+			sta score
+			cld			
+
+			jsr showScore
+
 			lda #$12	// triangle, sync, gate off
 			sta $d404	// voice 1
 			lda #$22	// sawtooth, sync, gate off
@@ -902,6 +981,71 @@ sfxWon:		lda #$22	// Attack quick Decay quick
 			sta $d412
 			rts
 
+msgWon1:	.byte 16, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 18
+msgWon2:	.byte 20,  8, 83, 67, 79, 82, 69,  8,  8,  8,  8,  8,  8, 20
+msgWon3:	.byte 19, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 21	
+
+
+/**
+ * Sound effect level won
+ */
+sfxLost:	lda #$22	// Attack quick Decay quick
+			sta $d405	// AD voice 1
+			sta $d40c	// AD voice 2
+			sta $d413	// AD voice 3
+			lda #$f8	// Sustain high, Release quick
+			sta $d406	// SR voice 1
+			sta $d40d	// SR voice 2
+			sta $d414	// SR voice 3
+			lda #137	// note D4, voice 1
+			sta $d400
+			lda #19
+			sta $d401
+			lda #59		// note F4, voice 2
+			sta $d407
+			lda #23
+			sta $d408
+			lda #69		// note A4, voice 3
+			sta $d40e
+			lda #29
+			sta $d40f
+			lda #0		// no filter
+			sta $d417
+			lda #$0f	// full volume
+			sta $d418
+			lda #$13	// triangle, sync, gate on
+			sta $d404	// voice 1
+			lda #$23	// sawtooth, sync, gate on
+			sta $d40b
+			lda #$43	// square, sync, gate on
+			sta $d412
+
+			// instead of wait for sound - write the lost message
+			ldy #12
+writeLost:	lda msgLost1-1,y
+			sta 1024+290,y
+			lda msgLost2-1,y
+			sta 1024+330,y
+			lda msgLost3-1,y
+			sta 1024+370,y
+			lda #1
+			sta $d800+290,y
+			sta $d800+330,y
+			sta $d800+370,y
+			dey
+			bne writeLost
+
+			lda #$12	// triangle, sync, gate off
+			sta $d404	// voice 1
+			lda #$22	// sawtooth, sync, gate off
+			sta $d40b
+			lda #$40	// square, sync, gate off
+			sta $d412
+			rts
+
+msgLost1:	.byte 16, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 18
+msgLost2:	.byte 20,  8, 89, 79, 85,  8, 76, 79, 83, 84,  8, 20
+msgLost3:	.byte 19, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 21	
 
 /**
  * All sound effects stop
@@ -926,6 +1070,7 @@ isready:	.byte 0			// field completed? 0 = no, 1 = yes
 moves:		.byte 0			// number of moves in decimal
 timer50th:	.byte 0			// timer 50th of a second 
 timerScore:	.byte 0, 0		// timer score in decimal
+score:		.byte 0, 0		// Score of the last game in decimal
 
 
 buffer:		.fill 1000,0	// color ram buffer

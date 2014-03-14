@@ -26,23 +26,28 @@ I prefer crossdevelopment, because it's more comfortable and you get
 a much faster turnaround. To be as independent as possible, I'm using
 tools, that are available on all three important operating systems:
 
-- VICE Emulator
+- VICE Emulator (for all main Operating Systems)
 
 - Kick Assembler (written in Java)
 
 - assCharEdit for character Editing (written in Java)
 
+- DroiD64 for handling D64 Files on development machine (written in Java)
+
 - Grab your preferred ASCII-Editor. On Linux, I use Geany
 
-- Sound Monitor from Chris Huelsbeck
+- Sound Monitor from Chris Huelsbeck (on the C64)
 
 
 the files
 ---------
 colorflood_basic.txt - the proof for the colorchanging algorithm. working but unbelievable slow.
+
 colorflood.asm - the 6502 assembler sourcecode
+
 font.bin - the new character set with game graphics
 
+music.bin - the music (huelsbeck player)
  
 
 project status
@@ -71,9 +76,13 @@ Working:
 
 - moves countdown. Zero stops game
 
+- timer countdown. Zero stops game
 
-Not working until now:
+- At the end of a game, message "You lost" oder "score 1234" is displayed
 
-- no detection, if the countdown is on zero
 
-- no end of level action
+Still to do:
+
+- Short Lost or Won Melody at the end of level
+- After 5 s. jump back to title
+- show last score on title
