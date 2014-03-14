@@ -69,11 +69,10 @@ Working:
 
 - unpacking routine
 
+- moves countdown. Zero stops game
 
 
 Not working until now:
-
-- no detection if all possible moves are made
 
 - no detection, if the countdown is on zero
 

@@ -279,7 +279,7 @@ colorfill1:	lda $d012		// begin random calculation
 			dex
 			bne colorfill
 
-			lda #0			// set turn counter (new)
+			lda #$45		// set turn counter
 			sta moves
 			jsr showScore
 
@@ -447,10 +447,19 @@ gameloop:	asl $d019		// delete IRQ flag
 			bne gameEnd
 
 			inc $d020		// increase border color
-
 			lda mode		// 0 = joystick mode, 1 = flood mode
 			bne doFlood
-			jsr sfxReset
+
+			lda moves		// first check, if there are moves left
+			bne gameloop1
+			lda #1
+			sta isready		// quit
+			jsr sfxWon		// play won tune
+			lda #0
+			sta $d020		// Set border back to black
+			jmp gameEnd
+
+gameloop1:	jsr sfxReset
 			jsr joystick	// read joystick
 			jsr checkReady  // check, if everything is filled
 			jmp quitirq
@@ -527,9 +536,9 @@ joyfire:	txa
 
 			// increase turn counter in decimal mode
 			sed				//set decimal mode
-			clc
-			lda #$01
-			adc moves
+			sec
+			lda moves
+			sbc #$01
 			sta moves
 			cld				//clear decimal mode
 			jsr showScore
@@ -913,7 +922,7 @@ sfxReset:	lda #0
 retard:		.byte 0			// delay selection by joystick
 mode:		.byte 0			// 0 = joystick mode, 1 = flood mode
 tilechange: .byte 0			// 0 = no tile changed - flood complete
-isready:	.byte 0			// 0 = no, 1 = yes
+isready:	.byte 0			// field completed? 0 = no, 1 = yes
 moves:		.byte 0			// number of moves in decimal
 timer50th:	.byte 0			// timer 50th of a second 
 timerScore:	.byte 0, 0		// timer score in decimal
@@ -928,4 +937,4 @@ charset:	.import binary "font.bin"
 
 // music (huelsbeck player)
 // must be copied to a000, player starts c000
-music:		.import binary "music.prg"
+music:		.import binary "music.bin"
