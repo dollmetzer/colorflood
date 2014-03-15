@@ -82,10 +82,12 @@ Working:
 
 - 5s after end of game, jump back to title
 
+- fixed music in title after first game
+
 
 Still to do:
 
-- No music in title after first game :-(
+- Win on last move is displayed as "you lost"
 
 - Short Lost or Won Melody at the end of level
 

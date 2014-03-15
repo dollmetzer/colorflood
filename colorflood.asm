@@ -144,21 +144,25 @@ title:		lda #$00
 			jsr $ffd2
 
 			// delete music registers from 02c0 to 02e0
-//			ldy #$10
-//			lda #0
-// musicReset:	sta $02bf,y
-//			dey
-//			bne musicReset
+			lda #0
+			sta $02c0		// current note in pattern
+			sta $02c1		// current pattern number
 
 			// switch music on (interrupt to c01f)
-//			jsr $c000
 			sei
-			lda #$c0
-			sta $0315
-			lda #$1f
+			lda #<titleMusic	// instead $1f
 			sta $0314
-			lda #$80		// no vic interrupt
-			sta $d01a 
+			lda #>titleMusic	// instead $c0
+			sta $0315
+			asl $d019		//
+			lda #$7b		//
+			sta $dc0d		// CIA Interrupt Control and Status
+			lda #$81		// set interrupt request to raster
+			sta $d01a
+			lda #$1b 		// set raster row
+			sta $d011 
+			lda #$c0 
+			sta $d012
 			cli
 			
 			// paint horizontal lines
@@ -259,6 +263,26 @@ copyright:	.byte 64, 32, 50, 48, 49, 52, 32		// c 2014
 			.byte 77, 69, 84, 90, 69, 82			// metzer
 			.byte 0	// end of string
 
+
+/**
+ * IRQ Routine for title melody (Original from $c01f-$c033
+ */
+titleMusic:	sei
+			asl $d019
+			lda $01			// rescue memory setup
+			sta $02c5
+			lda #$36		// switch off basic rom
+			sta $01
+			jsr $c475		// play music
+			lda $02c5		// restore memory setup
+			sta $01
+			// instead of jmp $ea31, quit IRQ
+			pla				// restore a, y and x
+			tay
+			pla
+			tax
+			pla
+			rti				// return from interrupt
 
 
 /*
@@ -497,7 +521,6 @@ gameloop:	asl $d019		// delete IRQ flag
 			lda isready
 			bne waitAfter
 
-			inc $d020		// increase border color
 			lda mode		// 0 = joystick mode, 1 = flood mode
 			bne doFlood
 
@@ -517,8 +540,6 @@ gameloop1:	jsr sfxReset
 doFlood:	jsr flood		
 quitirq:	nop
 			jsr timerDec	// timer decrease
-			lda #0
-			sta $d020		// Set border back to black
 			jmp gameEnd
 
 waitAfter:	dec finishTimer
@@ -1104,6 +1125,9 @@ writeLost:	lda msgLost1-1,y
 			lda #$40	// square, sync, gate off
 			sta $d412
 
+			lda #$00
+			sta score
+			sta score+1
 			lda #$ff
 			sta finishTimer
 			rts
