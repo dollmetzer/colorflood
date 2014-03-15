@@ -523,6 +523,10 @@ gameloop:	asl $d019		// delete IRQ flag
 
 			lda mode		// 0 = joystick mode, 1 = flood mode
 			bne doFlood
+			
+			jsr checkReady  // check, if everything is filled
+			lda isready
+			bne waitAfter
 
 			lda moves		// first check, if there are moves left
 			bne gameloop1
@@ -534,8 +538,7 @@ gameloop:	asl $d019		// delete IRQ flag
 			jmp gameEnd
 
 gameloop1:	jsr sfxReset
-			jsr joystick	// read joystick
-			jsr checkReady  // check, if everything is filled
+			jsr joystick	// read joystick			
 			jmp quitirq
 doFlood:	jsr flood		
 quitirq:	nop

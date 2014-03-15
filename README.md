@@ -5,8 +5,9 @@ A tiny game of changing colors for the Commodore 64
 
 The goal of the game is easy: 
 
-Bring all 256 Fields to the same color with the least possible moves,
-as fast as you can.
+Bring all 256 fields to the same color with the least possible moves,
+as fast as you can by constantly changing the color of the upper left
+field.
 
 This is a little just-for-fun-project inspired by a python game, that
 was pre installed on raspian wheezy for the Raspberry Pi.
@@ -82,12 +83,13 @@ Working:
 
 - 5s after end of game, jump back to title
 
-- fixed music in title after first game
+- DEBUG: fixed music in title after first game
 
+- DEBUG: Win on last move is displayed as "you lost"
 
 Still to do:
 
-- Win on last move is displayed as "you lost"
+- After first game, music starts not exactly on 00:00
 
 - Short Lost or Won Melody at the end of level
 
